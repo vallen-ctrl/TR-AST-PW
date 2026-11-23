@@ -11,9 +11,9 @@ use Illuminate\View\View;
 
 class PengajuanController extends Controller
 {
-    /**
-     * Tampilkan form pengajuan untuk satu beasiswa.
-     */
+    
+    //Tampilkan form pengajuan untuk satu beasiswa.
+     
     public function create(int $id): View
     {
         $beasiswa = DB::table('beasiswa')->where('id', $id)->first();
@@ -22,9 +22,9 @@ class PengajuanController extends Controller
         return view('apply', compact('beasiswa'));
     }
 
-    /**
-     * Simpan pengajuan beasiswa milik user yang sedang login.
-     */
+    
+    //Simpan pengajuan beasiswa milik user yang sedang login.
+    
     public function store(Request $request, int $id): RedirectResponse
     {
         $beasiswa = DB::table('beasiswa')->where('id', $id)->first();
