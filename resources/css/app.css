@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    ::selection {
+        background-color: #b8ff00;
+        color: #000;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    /* Latar kuning dengan polkadot oranye khas neo-brutalism */
+    .neo-dots {
+        background-color: #ffe600;
+        background-image: radial-gradient(circle, #f7941d 0 11px, transparent 11.5px);
+        background-size: 96px 96px;
+        background-position: 12px 12px;
+    }
+
+    .neo-card {
+        @apply rounded-[28px] border-[3px] border-black bg-neo-cream shadow-[7px_7px_0_0_#000];
+    }
+
+    .neo-input {
+        @apply w-full rounded-xl border-[3px] border-black bg-white px-4 py-3 font-hand text-lg text-black placeholder:text-black/40 focus:border-black focus:outline-none focus:ring-4 focus:ring-neo-lime;
+    }
+
+    .neo-label {
+        @apply mb-1.5 block font-display text-sm font-bold uppercase tracking-wide text-black;
+    }
+
+    .neo-btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl border-[3px] border-black bg-neo-blue px-6 py-3 font-display text-base font-extrabold text-white shadow-[4px_4px_0_0_#000] transition duration-150 hover:-translate-y-0.5 hover:shadow-[5px_6px_0_0_#000] active:translate-y-0.5 active:shadow-[2px_2px_0_0_#000] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0;
+    }
+
+    .neo-btn-lime {
+        @apply bg-neo-lime text-black;
+    }
+
+    .neo-btn-ghost {
+        @apply bg-white text-black;
+    }
+
+    .neo-btn-danger {
+        @apply bg-[#E53935] text-white;
+    }
+
+    .neo-badge {
+        @apply inline-flex items-center rounded-md border-2 border-black px-3 py-0.5 font-display text-xs font-extrabold uppercase tracking-wide shadow-[2px_2px_0_0_#000];
+    }
+
+    .neo-chip {
+        @apply inline-flex items-center gap-1 rounded-md border-2 border-black px-2 py-0.5 font-hand text-sm leading-tight;
+    }
+
+    .neo-select {
+        @apply w-full cursor-pointer appearance-none border-0 bg-transparent p-0 font-hand text-lg leading-tight text-black focus:border-0 focus:ring-0;
+    }
+
+    .neo-nav-link {
+        @apply rounded-md px-1.5 py-0.5 font-hand text-lg text-black underline decoration-2 underline-offset-4 transition hover:bg-neo-lime hover:no-underline focus:outline-none focus-visible:ring-4 focus-visible:ring-black/20;
+    }
+
+    .neo-nav-link-active {
+        @apply bg-neo-lime no-underline shadow-[2px_2px_0_0_#000] ring-2 ring-black;
+    }
+}
