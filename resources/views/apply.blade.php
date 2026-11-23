@@ -1,101 +1,122 @@
-@extends('layouts.app')
-
-@section('content')
-<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
-
-<div class="min-h-screen bg-[#FFE600] px-4 py-10" style="font-family: 'Patrick Hand', cursive;">
-    <div class="mx-auto max-w-3xl">
-
-        <a href="{{ route('scholarships.index') }}"
-           class="mb-4 inline-block rounded-xl border-2 border-black bg-white px-4 py-1 text-sm shadow-[3px_3px_0_0_#000] hover:bg-[#B8FF00] focus:outline-none focus-visible:ring-4 focus-visible:ring-black">
-            Kembali ke daftar beasiswa
+<x-app-layout>
+    <div class="mx-auto max-w-4xl">
+        <a href="{{ route('dashboard') }}"
+           class="mb-5 inline-block rounded-xl border-[3px] border-black bg-white px-4 py-1.5 font-hand text-base shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#B8FF00] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/30">
+            Kembali
         </a>
 
-        {{-- Ringkasan beasiswa --}}
-        <section class="mb-6 rounded-3xl border-2 border-black bg-[#FFFDF5] p-6 shadow-[6px_6px_0_0_#000]">
-            <h1 class="text-3xl leading-tight">{{ $scholarship->name }}</h1>
-            <p class="mt-1 text-gray-700">{{ $scholarship->institution }}</p>
+        <div class="mb-6">
+            <span class="neo-badge bg-[#8A2BE2] text-white">Pengajuan</span>
+            <h1 class="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-4xl">Ajukan beasiswa</h1>
+        </div>
 
-            <div class="mt-4 rounded-xl border-2 border-black bg-[#EEF1F8] p-3 text-sm">
-                <p class="font-bold">Syarat utama:</p>
-                <p>{{ $scholarship->requirements }}</p>
-            </div>
+        <div class="space-y-6">
 
-            <div class="mt-4 flex flex-wrap items-center gap-3 text-sm">
-                <div class="rounded-xl border-2 border-black bg-[#FFD9A8] px-4 py-2 text-center">
-                    <span class="block text-xs">Sisa kuota</span>
-                    <span class="text-xl">{{ $scholarship->remaining_quota }}/{{ $scholarship->quota }}</span>
+            {{-- Ringkasan beasiswa --}}
+            <section class="neo-card p-5 sm:p-8">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <h2 class="font-display text-2xl font-extrabold leading-tight sm:text-3xl">{{ $beasiswa->Nama }}</h2>
+                    <span class="neo-badge {{ $beasiswa->status === 'dibuka' ? 'bg-[#B8FF00]' : 'bg-[#FF8A80]' }} text-black">
+                        {{ ucfirst($beasiswa->status) }}
+                    </span>
                 </div>
-                <span class="rounded-md border-2 border-black bg-[#9ED8FF] px-2 py-1">
-                    Dibuka: {{ $scholarship->open_date->translatedFormat('d F Y') }}
-                </span>
-                <span class="rounded-md border-2 border-black bg-[#FFD27A] px-2 py-1">
-                    Ditutup: {{ $scholarship->close_date->translatedFormat('d F Y') }}
-                </span>
-            </div>
-        </section>
 
-        {{-- Form --}}
-        <form method="POST"
-              action="{{ route('applications.store', $scholarship) }}"
-              enctype="multipart/form-data"
-              class="rounded-3xl border-2 border-black bg-[#FFFDF5] p-6 shadow-[6px_6px_0_0_#000]">
-            @csrf
+                <p class="mt-2 font-hand text-lg text-black/70">{{ $beasiswa->Deskripsi }}</p>
 
-            <h2 class="mb-4 text-2xl">Formulir pengajuan</h2>
-
-            @if ($errors->any())
-                <div class="mb-5 rounded-xl border-2 border-black bg-[#FF8A80] p-3 text-sm" role="alert">
-                    <p class="font-bold">Pengajuan belum bisa dikirim:</p>
-                    <ul class="list-disc pl-5">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                <div class="mt-4 rounded-xl border-2 border-black bg-[#EEF1F8] p-3">
+                    <p class="font-display text-sm font-extrabold">Syarat utama:</p>
+                    <p class="font-hand text-base">{{ $beasiswa->SyaratUtama }}</p>
                 </div>
-            @endif
 
-            <div class="mb-5">
-                <label for="name" class="mb-1 block">Nama pelamar</label>
-                <input id="name" type="text" value="{{ auth()->user()->name }}" readonly
-                       class="w-full rounded-xl border-2 border-black bg-gray-100 px-3 py-2">
-            </div>
-
-            <div class="mb-5 grid gap-5 sm:grid-cols-2">
-                <div>
-                    <label for="semester" class="mb-1 block">Semester saat ini</label>
-                    <input id="semester" name="semester" type="number" min="1" max="14" required
-                           value="{{ old('semester') }}"
-                           class="w-full rounded-xl border-2 border-black bg-[#B8FF00] px-3 py-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-black">
-                    <p class="mt-1 text-xs text-gray-600">Minimal semester {{ $scholarship->min_semester }}</p>
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="rounded-xl border-2 border-black bg-[#FFD9A8] px-4 py-2 text-center shadow-[2px_2px_0_0_#000]">
+                        <span class="block font-hand text-xs">Sisa kuota</span>
+                        <span class="font-display text-xl font-extrabold">{{ $beasiswa->JumlahKursi - $beasiswa->SudahMasuk }}/{{ $beasiswa->JumlahKursi }}</span>
+                    </div>
+                    <span class="rounded-md border-2 border-black bg-[#9ED8FF] px-2 py-1 font-hand text-sm">
+                        Dibuka: {{ \Carbon\Carbon::parse($beasiswa->Dibuka)->translatedFormat('d F Y') }}
+                    </span>
+                    <span class="rounded-md border-2 border-black bg-[#FFD27A] px-2 py-1 font-hand text-sm">
+                        Ditutup: {{ \Carbon\Carbon::parse($beasiswa->Ditutup)->translatedFormat('d F Y') }}
+                    </span>
+                    <span class="rounded-md border-2 border-black bg-white px-2 py-1 font-hand text-sm">
+                        Jenjang: {{ $beasiswa->Jenjang }}
+                    </span>
                 </div>
-                <div>
-                    <label for="ipk" class="mb-1 block">IPK</label>
-                    <input id="ipk" name="ipk" type="number" step="0.01" min="0" max="4" required
-                           value="{{ old('ipk') }}"
-                           class="w-full rounded-xl border-2 border-black bg-[#B8FF00] px-3 py-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-black">
-                    <p class="mt-1 text-xs text-gray-600">Minimal IPK {{ number_format($scholarship->min_ipk, 2) }}</p>
+            </section>
+
+            {{-- Form --}}
+            <section class="neo-card p-5 sm:p-8">
+                <div class="max-w-xl">
+                    <header>
+                        <h2 class="font-display text-xl font-extrabold text-black">Formulir pengajuan</h2>
+                        <p class="mt-1 font-hand text-base text-black/60">Isi data kampusmu dan unggah berkas persyaratan dalam satu file PDF.</p>
+                    </header>
+
+                    <form method="POST"
+                          action="{{ route('applications.store', $beasiswa->id) }}"
+                          enctype="multipart/form-data"
+                          class="mt-6 space-y-5">
+                        @csrf
+
+                        @if ($errors->any())
+                            <div class="rounded-xl border-2 border-black bg-[#FF8A80] p-3 font-hand text-base" role="alert">
+                                <p class="font-display text-sm font-extrabold">Pengajuan belum bisa dikirim:</p>
+                                <ul class="list-disc pl-5">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <div>
+                            <x-input-label for="pelamar" value="Nama pelamar" />
+                            <x-text-input id="pelamar" type="text" class="mt-1 block w-full bg-gray-100" :value="auth()->user()->name" readonly />
+                        </div>
+
+                        <div>
+                            <x-input-label for="NamaUniversitas" value="Nama universitas" />
+                            <x-text-input id="NamaUniversitas" name="NamaUniversitas" type="text" maxlength="255" class="mt-1 block w-full" :value="old('NamaUniversitas')" required />
+                            <x-input-error class="mt-2" :messages="$errors->get('NamaUniversitas')" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="Semester" value="Semester saat ini" />
+                            <x-text-input id="Semester" name="Semester" type="number" min="1" max="14" placeholder="Contoh: 5" class="mt-1 block w-full" :value="old('Semester')" required />
+                            <x-input-error class="mt-2" :messages="$errors->get('Semester')" />
+                        </div>
+                        
+                        <div>
+                            <x-input-label for="IPK" value="IPK" />
+                            <x-text-input id="IPK" name="IPK" type="number" step="0.01" min="0" max="4" placeholder="Contoh: 3.75" class="mt-1 block w-full" :value="old('IPK')" required />
+                            <x-input-error class="mt-2" :messages="$errors->get('IPK')" />
+                        </div>
+                        
+                        <div>
+                            <x-input-label for="AlamatUniv" value="Alamat universitas" />
+                            <textarea id="AlamatUniv" name="AlamatUniv" rows="3" required
+                                      class="mt-1 block w-full rounded-xl border-[3px] border-black bg-white px-3 py-2 font-hand text-base focus:outline-none focus:ring-4 focus:ring-[#8A2BE2]/30">{{ old('AlamatUniv') }}</textarea>
+                            <x-input-error class="mt-2" :messages="$errors->get('AlamatUniv')" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="document" value="Berkas persyaratan (PDF, maks. 2 MB)" />
+                            <input id="document" name="document" type="file" accept="application/pdf" required
+                                   class="mt-1 block w-full rounded-xl border-[3px] border-black bg-white px-3 py-2 font-hand text-base file:mr-3 file:rounded-lg file:border-2 file:border-black file:bg-[#9ED8FF] file:px-3 file:py-1 file:font-hand focus:outline-none focus:ring-4 focus:ring-[#8A2BE2]/30">
+                            <x-input-error class="mt-2" :messages="$errors->get('document')" />
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-3">
+                            <x-primary-button>Kirim pengajuan</x-primary-button>
+                            <a href="{{ route('dashboard') }}"
+                               class="rounded-xl border-[3px] border-black bg-white px-4 py-2 font-hand text-base shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#B8FF00] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/30">
+                                Batal
+                            </a>
+                        </div>
+                    </form>
                 </div>
-            </div>
-
-            <div class="mb-6">
-                <label for="document" class="mb-1 block">Berkas persyaratan (PDF, maks. 2 MB)</label>
-                <input id="document" name="document" type="file" accept="application/pdf" required
-                       class="w-full rounded-xl border-2 border-black bg-white px-3 py-2 file:mr-3 file:rounded-lg file:border-2 file:border-black file:bg-[#9ED8FF] file:px-3 file:py-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-black">
-                <p class="mt-1 text-xs text-gray-600">Gabungkan transkrip nilai resmi dan dokumen pendukung dalam satu file PDF.</p>
-            </div>
-
-            <div class="flex flex-wrap gap-3">
-                <button type="submit"
-                        class="rounded-xl border-2 border-black bg-[#1E88E5] px-6 py-2 text-white shadow-[4px_4px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] focus:outline-none focus-visible:ring-4 focus-visible:ring-black">
-                    Kirim pengajuan
-                </button>
-                <a href="{{ route('scholarships.index') }}"
-                   class="rounded-xl border-2 border-black bg-white px-6 py-2 shadow-[4px_4px_0_0_#000] hover:bg-gray-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-black">
-                    Batal
-                </a>
-            </div>
-        </form>
+            </section>
+        </div>
     </div>
-</div>
-@endsection
+</x-app-layout>
