@@ -24,7 +24,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->string('NamaUniversitas', 255);
-            $table->string('Angkatan', 255);
+            $table->integer('Semester');
             $table->text('AlamatUniv');
             $table->text('UploadFilePath');
             $table->text('NamaFile');
