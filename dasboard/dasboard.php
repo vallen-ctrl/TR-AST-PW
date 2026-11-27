@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 
@@ -5,34 +6,72 @@ $pdo = new PDO('mysql:host=localhost;dbname=beasiswa_db;charset=utf8mb4', 'root'
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
-if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
-function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+}
+
+function e($v) {
+    return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+}
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!hash_equals($_SESSION['csrf'], $_POST['csrf'] ?? '')) { http_response_code(419); exit('Token tidak valid.'); }
-
-    $id   = (int)($_POST['id'] ?? 0);
-    $aksi = $_POST['aksi'] ?? '';
-    $map  = ['setujui' => 'disetujui', 'tolak' => 'ditolak'];
-
-    if ($id && isset($map[$aksi])) {
-        $pdo->prepare("UPDATE pendaftaran SET status = ? WHERE id = ? AND status = 'pending'")->execute([$map[$aksi], $id]);
-        $_SESSION['flash'] = $aksi === 'setujui' ? 'Pengajuan disetujui.' : 'Pengajuan ditolak.';
+    if (!hash_equals($_SESSION['csrf'], $_POST['csrf'] ?? '')) {
+        http_response_code(419);
+        exit('Token tidak valid.');
     }
+
+    $id = (int)($_POST['id'] ?? 0);
+    $aksi = $_POST['aksi'] ?? '';
+
+    $map = [
+        'setujui' => 'diterima',
+        'tolak' => 'ditolak'
+    ];
+
+    if ($id > 0 && isset($map[$aksi])) {
+        $stmt = $pdo->prepare("
+            UPDATE memiliki
+            SET StatusDiterima = ?
+            WHERE id = ? AND StatusDiterima = 'menunggu'
+        ");
+
+        $stmt->execute([$map[$aksi], $id]);
+
+        if ($stmt->rowCount() > 0) {
+            $_SESSION['flash'] = $aksi === 'setujui'
+                ? 'Pengajuan berhasil disetujui.'
+                : 'Pengajuan berhasil ditolak.';
+        } else {
+            $_SESSION['flash'] = 'Pengajuan tidak ditemukan atau sudah diproses.';
+        }
+    }
+
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
     exit;
 }
 
 $status = $_GET['status'] ?? '';
-$sql = "SELECT p.*, u.name, u.email, b.nama AS beasiswa
-        FROM pendaftaran p
-        JOIN users u ON u.id = p.user_id
-        JOIN beasiswa b ON b.id = p.beasiswa_id";
+
+$sql = "
+    SELECT
+        m.*,
+        u.name,
+        u.email,
+        b.Nama AS beasiswa
+    FROM memiliki m
+    JOIN users u ON u.id = m.id_user
+    JOIN beasiswa b ON b.id = m.id_beasiswa
+";
 
 $params = [];
 
 if (in_array($status, ['menunggu', 'diterima', 'ditolak'], true)) {
     $sql .= " WHERE m.StatusDiterima = ?";
     $params[] = $status;
+} else {
+    $status = '';
 }
 
 $sql .= " ORDER BY m.TanggalDaftar DESC";
@@ -40,7 +79,7 @@ $sql .= " ORDER BY m.TanggalDaftar DESC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 
-$rows = $stmt->fetchAll();
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $jumlah = [
     'menunggu' => 0,
@@ -48,12 +87,16 @@ $jumlah = [
     'ditolak' => 0
 ];
 
-foreach ($pdo->query("
-    SELECT StatusDiterima, COUNT(*) AS c
+$stmtJumlah = $pdo->query("
+    SELECT StatusDiterima, COUNT(*) AS total
     FROM memiliki
     GROUP BY StatusDiterima
-") as $r) {
-    $jumlah[$r['StatusDiterima']] = (int)$r['c'];
+");
+
+foreach ($stmtJumlah as $r) {
+    if (isset($jumlah[$r['StatusDiterima']])) {
+        $jumlah[$r['StatusDiterima']] = (int)$r['total'];
+    }
 }
 
 $warna = [
@@ -61,12 +104,20 @@ $warna = [
     'diterima' => 'st-setuju',
     'ditolak' => 'st-tolak'
 ];
+
+$labelStatus = [
+    'menunggu' => 'Menunggu',
+    'diterima' => 'Diterima',
+    'ditolak' => 'Ditolak'
+];
+
 $filter = [
     '' => 'Semua',
     'menunggu' => 'Menunggu',
-    'diterima' => 'Disetujui',
+    'diterima' => 'Diterima',
     'ditolak' => 'Ditolak'
 ];
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -124,7 +175,6 @@ h1{margin-top:12px;font-size:clamp(30px,5vw,40px);font-weight:800;line-height:1.
 footer{border-top:3px solid #000;background:var(--krem);text-align:center;padding:16px;font-size:15px;color:rgba(0,0,0,.7)}
 footer b{font-family:'Baloo 2',cursive;font-weight:800;color:#000}
 @media (max-width:640px){nav{padding:12px 16px}main{padding:20px 14px 36px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 .stat{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
 .stat div{border:3px solid #000;border-radius:20px;box-shadow:5px 5px 0 #000;padding:14px 18px}
@@ -154,12 +204,12 @@ tbody tr:hover td{background:rgba(184,255,0,.18)}
 </head>
 <body>
 <nav>
-  <a href="dasbord.php" class="logo">
+  <a href="dasboard.php" class="logo">
     <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="45" height="45" rx="11" fill="#fff" stroke="#000" stroke-width="3"/><path d="M11 20.5 24 14l13 6.5-13 6.5-13-6.5Z" fill="#B8FF00" stroke="#000" stroke-width="2.5" stroke-linejoin="round"/><path d="M15.5 23.5V30c0 2.5 3.8 4.5 8.5 4.5s8.5-2 8.5-4.5v-6.5" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M37 21v8" stroke="#000" stroke-width="2.5" stroke-linecap="round"/></svg>
     <span>Edu<b>.</b>com</span>
   </a>
   <div class="menu">
-    <a href="dasbord.php" class="aktif" aria-current="page">Pengajuan masuk</a>
+    <a href="dasboard.php" class="aktif" aria-current="page">Pengajuan masuk</a>
     <a href="addbeasiswa.php">Tambah beasiswa</a>
   </div>
 </nav>
@@ -175,9 +225,18 @@ tbody tr:hover td{background:rgba(184,255,0,.18)}
   <p class="sub">Periksa data pendaftar, lalu setujui atau tolak.</p>
 
   <div class="stat">
-    <div class="s1"><strong><?= (int)$jumlah['pending'] ?></strong><span>Menunggu</span></div>
-    <div class="s2"><strong><?= (int)$jumlah['disetujui'] ?></strong><span>Disetujui</span></div>
-    <div class="s3"><strong><?= (int)$jumlah['ditolak'] ?></strong><span>Ditolak</span></div>
+    <div class="s1">
+      <strong><?= (int)$jumlah['menunggu'] ?></strong>
+      <span>Menunggu</span>
+    </div>
+    <div class="s2">
+      <strong><?= (int)$jumlah['diterima'] ?></strong>
+      <span>Diterima</span>
+    </div>
+    <div class="s3">
+      <strong><?= (int)$jumlah['ditolak'] ?></strong>
+      <span>Ditolak</span>
+    </div>
   </div>
 
   <div class="filter">
@@ -189,33 +248,53 @@ tbody tr:hover td{background:rgba(184,255,0,.18)}
   <div class="kartu tabel">
     <table>
       <thead>
-        <tr><th>Pendaftar</th><th>Beasiswa</th><th>IPK</th><th>Tanggal</th><th>Status</th><th class="kanan">Tindakan</th></tr>
+        <tr>
+          <th>Pendaftar</th>
+          <th>Beasiswa</th>
+          <th>IPK</th>
+          <th>Tanggal</th>
+          <th>Status</th>
+          <th class="kanan">Tindakan</th>
+        </tr>
       </thead>
       <tbody>
       <?php if (!$rows): ?>
-        <tr><td colspan="6" class="kosong">Belum ada pengajuan. Pengajuan baru akan muncul di sini.</td></tr>
+        <tr>
+          <td colspan="6" class="kosong">Belum ada pengajuan. Pengajuan baru akan muncul di sini.</td>
+        </tr>
       <?php endif; ?>
+
       <?php foreach ($rows as $p): ?>
         <tr>
-          <td><div class="nama"><?= e($p['name']) ?></div><div class="surel"><?= e($p['email']) ?></div></td>
-          <td><?= e($p['beasiswa']) ?></td>
-          <td><?= number_format($p['ipk'], 2) ?></td>
-          <td class="nw"><?= date('d M Y', strtotime($p['created_at'])) ?></td>
-          <td><span class="st <?= $warna[$p['status']] ?>"><?= e(ucfirst($p['status'])) ?></span></td>
           <td>
-            <?php if ($p['status'] === 'pending'): ?>
+            <div class="nama"><?= e($p['name']) ?></div>
+            <div class="surel"><?= e($p['email']) ?></div>
+          </td>
+          <td><?= e($p['beasiswa']) ?></td>
+          <td><?= isset($p['ipk']) && $p['ipk'] !== '' ? number_format((float)$p['ipk'], 2) : '-' ?></td>
+          <td class="nw">
+            <?= !empty($p['TanggalDaftar']) ? date('d M Y', strtotime($p['TanggalDaftar'])) : '-' ?>
+          </td>
+          <td>
+            <span class="st <?= e($warna[$p['StatusDiterima']] ?? '') ?>">
+              <?= e($labelStatus[$p['StatusDiterima']] ?? $p['StatusDiterima']) ?>
+            </span>
+          </td>
+          <td>
+            <?php if ($p['StatusDiterima'] === 'menunggu'): ?>
               <div class="aksi">
                 <form method="POST">
                   <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
                   <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
                   <input type="hidden" name="aksi" value="setujui">
-                  <button class="btn-kecil btn-lime" style="background:var(--lime);color:#000">Setujui</button>
+                  <button type="submit" class="btn-kecil btn-lime">Setujui</button>
                 </form>
+
                 <form method="POST" onsubmit="return confirm('Tolak pengajuan ini?')">
                   <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
                   <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
                   <input type="hidden" name="aksi" value="tolak">
-                  <button class="btn-kecil" style="background:#fff;color:var(--merah)">Tolak</button>
+                  <button type="submit" class="btn-kecil btn-bahaya">Tolak</button>
                 </form>
               </div>
             <?php else: ?>
